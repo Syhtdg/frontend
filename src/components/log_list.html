@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>저장된 로그 목록</title>
+</head>
+<body>
+  <h2>📋 사용자 로그 목록</h2>
+
+  <table border="1">
+    <thead>
+      <tr>
+        <th>사용자 ID</th>
+        <th>이벤트</th>
+        <th>IP</th>
+        <th>날짜</th>
+      </tr>
+    </thead>
+    <tbody id="logTableBody">
+      <!-- 로그들이 여기에 추가될 거야 -->
+    </tbody>
+  </table>
+
+  <script>
+    fetch('/log/all')
+      .then(res => res.json())
+      .then(logs => {
+        const tbody = document.getElementById('logTableBody');
+        logs.forEach(log => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${log.ID || '-'}</td>
+            <td>${log.event || '-'}</td>
+            <td>${log.IPAddress || '-'}</td>
+            <td>${new Date(log.created).toLocaleString()}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      })
+      .catch(err => {
+        alert('❌ 로그를 불러오지 못했어요.');
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
