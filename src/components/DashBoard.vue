@@ -3,84 +3,116 @@
     <v-app-bar>
       <img src="@/assets/입체 로고.png" alt="Logo" class="logo" />
       <v-btn>계정 관리</v-btn>
-      <v-btn>CCTV 관리</v-btn>
-      <v-btn>사용자 관리</v-btn>
+      <v-btn @click="$router.push('/cctvManage')">CCTV 관리</v-btn>
       <v-btn @click="$router.push('/log')">로그 관리</v-btn>
     </v-app-bar>
 
-    <!-- 기상 정보 -->
+<div class="leftBoard" style="display: flex; flex-direction: column; gap: 24px;">
+  <!-- 상단: 기상정보, 필터, 실시간 CCTV -->
+  <div style="display: flex; flex-direction: row; gap: 24px;">
+    
+    <!-- 기상정보 -->
     <div>
       <h3>기상정보</h3>
       <div class="weather-info-card">
-        <p class="letter">온도:<span class="wether-info">20</span></p>
-        <p class="letter">습도:<span class="wether-info">62%</span></p>
-        <p class="letter">풍량:<span class="wether-info">200</span></p>
-        <p class="letter">강수량:<span class="wether-info">210mm</span></p>
+        <p class="letter">온도:<span class="wether-info">{{ temp }}°C</span></p>
+        <p class="letter">습도:<span class="wether-info">{{ humidity }}%</span></p>
+        <p class="letter">풍향:<span class="wether-info">{{ windDirection }}</span></p>
+        <p class="letter">풍속:<span class="wether-info">{{ windSpeed }} m/s</span></p>
+        <p class="letter">강수량:<span class="wether-info">{{ precipitation }} mm</span></p>
       </div>
     </div>
 
-    <!-- 🔍 필터 -->
-    <div class="filter-section">
-      <v-select
-        v-model="typeFilter"
-        :items="['전체', '불', '연기']"
-        label="종류 선택"
-        dense
-        outlined
-        class="filter-item"
-        color="gray"
-      ></v-select>
-
-      <v-menu
-        v-model="dateMenu"
-        transition="scale-transition"
-        offset-y
-        min-width="auto"
-      >
-        <template #activator="{ props }">
-          <v-text-field
-            v-model="formattedDate"
-            v-bind="props"
-            label="📅 날짜 선택"
-            dense
-            outlined
-            class="filter-item"
-            readonly
-            clearable
-            @click:clear="clearDate"
-          />
-        </template>
-        <v-date-picker
-          v-model="selectedDate"
-          @update:modelValue="onDateSelected"
-          locale="ko"
-        ></v-date-picker>
-      </v-menu>
-    </div>
-
-    <!-- 🔥 위험 정보 카드 -->
+    <!-- 필터 -->
     <div>
-      <h3>화재 위험 지역 정보</h3>
-      <div class="local-info-card-scroll">
-        <v-card
-          class="pa-4 mb-2"
-          v-for="log in filteredLogs"
-          :key="log._id"
-          :class="log.type === '불' ? 'fire-card' : 'smoke-card'"
+      <h3>필터</h3>
+      <div class="filter-section" style="background-color: white;">
+        <v-select
+          v-model="typeFilter"
+          :items="['전체', '불', '연기']"
+          label="종류 선택"
+          dense
+          outlined
+          class="filter-item"
+          color="gray"
+        ></v-select>
+        <v-menu
+          v-model="dateMenu"
+          transition="scale-transition"
+          offset-y
+          min-width="auto"
         >
-          <strong>위치:</strong> {{ log.location }}<br />
-          <strong>종류:</strong> {{ log.type }}<br />
-          <strong>신뢰도:</strong> {{ log.confidence }}%<br />
-          <small class="text-grey">{{ formatKoreanDate(log.timestamp) }}</small>
-        </v-card>
+          <template #activator="{ props }">
+            <v-text-field
+              v-model="formattedDate"
+              v-bind="props"
+              label="📅 날짜 선택"
+              dense
+              outlined
+              class="filter-item"
+              readonly
+              clearable
+              @click:clear="clearDate"
+            />
+          </template>
+          <v-date-picker
+            v-model="selectedDate"
+            @update:modelValue="onDateSelected"
+            locale="ko"
+          ></v-date-picker>
+        </v-menu>
       </div>
     </div>
+
+    <!-- 실시간 CCTV -->
+    <div>
+      <h3>실시간 CCTV</h3>
+      <div class="cctv-view">
+        <span style="color: dimgrey;">위치가 선택 되어 있지 않습니다.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 하단: 화재 위험 지역 정보 -->
+  <div style="display: flex; flex-direction: row; gap: 24px;">
+  <!-- 화재 위험 지역 정보 -->
+  <div style="flex: 1;">
+    <h3>화재 위험 지역 정보</h3>
+    <div class="local-info-card-scroll">
+      <v-card
+        class="pa-4 mb-2"
+        v-for="log in filteredLogs"
+        :key="log._id"
+        :class="log.type === '불' ? 'fire-card' : 'smoke-card'"
+      >
+        <strong>위치:</strong> {{ log.location }}<br />
+        <strong>종류:</strong> {{ log.type }}<br />
+        <strong>신뢰도:</strong> {{ log.confidence }}%<br />
+        <small class="text-grey">{{ formatKoreanDate(log.timestamp) }}</small>
+      </v-card>
+    </div>
+  </div>
+
+  <!-- 화재 주요 원인 -->
+  <div style="flex: 1;">
+    <h3>화재 주요 원인</h3>
+    <div class="cause-card" style="flex-direction: column; align-items: center;">
+      <!-- 차트 또는 설명 등 여기에 추가 -->
+      <img src="@/assets/Rectangle 12.png" alt="차트" class="bar-img"/>
+      <img src="@/assets/Rectangle 14.png" alt="차트" class="bar-img"/>
+      <img src="@/assets/Rectangle 15.png" alt="차트" class="bar-img"/>
+    </div>
+  </div>
+</div>
+</div>
 
     <!-- 지도 -->
-    <div>
-      <h3>지도</h3>
-      <div id="map" class="map" style="width: 560px; height: 768px; border-radius: 13px;"></div>
-    </div>
+    <keep-alive>
+      <div>
+        <h3>CCTV 지도</h3>
+        <div id="map" class="map" style="width: 560px; height: 694px; border-radius: 13px;"><MapComponet/></div>
+      </div>
+    </keep-alive>
 
     <!-- 📢 실시간 경고 다이얼로그 -->
     <v-dialog v-model="alertDialog" persistent max-width="500">
@@ -117,6 +149,8 @@ import axios from '@/plugins/axios'
 import io from 'socket.io-client'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
+import { getWeather } from '@/services/weatherService';
+import MapComponet from './MapComponet.vue'
 
 // 다이얼로그 상태
 const alertDialog = ref(false)
@@ -204,26 +238,49 @@ onMounted(() => {
 
     alertMessage.value = `위치: ${data.location}\n신뢰도: ${data.confidence}%`
   })
-
-  // 지도 로딩
-  if (typeof kakao === 'undefined') {
-    const script = document.createElement('script')
-    script.src = "//dapi.kakao.com/v2/maps/sdk.js?appkey=7287e30fdbe7200a54db305e55034cce&autoload=false"
-    script.onload = () => kakao.maps.load(initMap)
-    document.head.appendChild(script)
-  } else {
-    initMap()
-  }
 })
 
-function initMap() {
-  const container = document.getElementById('map')
-  const options = {
-    center: new kakao.maps.LatLng(37.532600, 127.024612),
-    level: 3
-  }
-  new kakao.maps.Map(container, options)
+//날씨 api--------------------------
+
+const getWindDirection = (deg) => {
+  if (deg >= 0 && deg < 45) return '북'
+  else if (deg >= 45 && deg < 90) return '북동'
+  else if (deg >= 90 && deg < 135) return '동'
+  else if (deg >= 135 && deg < 180) return '남동'
+  else if (deg >= 180 && deg < 225) return '남'
+  else if (deg >= 225 && deg < 270) return '남서'
+  else if (deg >= 270 && deg < 315) return '서'
+  else return '북서'
 }
+
+const temp = ref(null)
+const humidity = ref(null)
+const deg = ref(null)
+const windSpeed = ref(null);
+const windDirection = ref(null);
+const precipitation = ref(null)
+
+onMounted(async () => {
+  try {
+    const data = await getWeather(37.532600, 127.024612)
+    temp.value = data.temp
+    humidity.value = data.humidity
+    deg.value = data.windDeg
+    windSpeed.value = data.windSpeed
+    windDirection.value = getWindDirection(data.windDeg)
+    precipitation.value = data.precipitation
+  } catch (err) {
+    console.error(err)
+  }
+  return {
+      temp,
+      humidity,
+      windSpeed,
+      windDirection,
+      precipitation,
+    };
+})
+
 </script>
 
 
@@ -232,7 +289,9 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100vh;
+
 }
+
 .v-application {
   margin: 0 !important;
   padding: 0 !important;
@@ -262,10 +321,11 @@ html, body {
   background-color: #FFFFFF;
   border-radius: 13px;
   box-shadow: 0px 4px 11px -3px rgba(0, 0, 0, 0.31);
+  
 }
 .local-info-card-scroll {
-  width: 300px;
-  height: 600px;
+  width: 700px;
+  height: 400px;
   padding: 20px;
   background-color: #FFFFFF;
   border-radius: 13px;
@@ -292,6 +352,7 @@ html, body {
 }
 h3 {
   color: black;
+  margin-bottom: 8px;
 }
 .letter {
   color: black;
@@ -306,12 +367,16 @@ h3 {
   font-weight: 300;
 }
 .filter-section {
+  height:  238px;
   display: flex;
   gap: 16px;
-  margin: 0 20px 20px 20px;
+  border-radius: 13px;
+  box-shadow: 0px 4px 11px -3px rgba(0, 0, 0, 0.31);
+  padding: 20px;
 }
 .filter-item {
   width: 200px;
+  height: 100px;
   color: black;
 }
 
@@ -321,5 +386,31 @@ h3 {
   border: 2px solid rgba(255, 100, 100, 0.8);
   border-radius: 12px;
   box-shadow: 0 0 16px rgba(255, 100, 100, 0.4);
+}
+
+.cctv-view {
+  width: 300px;
+  height: 238px;
+  background-color: #FFFFFF;
+  border-radius: 13px;
+  box-shadow: 0px 4px 11px -3px rgba(0, 0, 0, 0.31);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+} 
+
+.cause-card {
+  width: 375px;
+  height: 400px;
+  background-color: #FFFFFF;
+  border-radius: 13px;
+  box-shadow: 0px 4px 11px -3px rgba(0, 0, 0, 0.31);
+}
+.bar-img {
+  width: 100%; 
+  height: auto; 
+  padding-right: 65px;
+  padding-left: 10PX;
+  padding-top: 20px;
 }
 </style>

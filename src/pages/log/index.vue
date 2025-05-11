@@ -1,5 +1,11 @@
 <template>
   <v-container class="pa-6">
+    <v-app-bar>
+      <img  src="@/assets/입체 로고.png" alt="Logo" class="logo" @click="$router.push('/dashboard')" />
+      <v-btn>계정 관리</v-btn>
+      <v-btn @click="$router.push('/cctvManage')">CCTV 관리</v-btn>
+      <v-btn @click="$router.push('/log')">로그 관리</v-btn>
+    </v-app-bar>
     <h2>로그 통합 관리</h2>
 
     <v-tabs v-model="tab" class="mb-4" background-color="white">
@@ -30,3 +36,13 @@ import AiErrorTable from '@/components/AiErrorTable.vue'
 
 const tab = ref(0)
 </script>
+
+<style scoped>
+.v-app-bar {
+  background-color: #A30505 !important;
+}
+
+.logo {
+  cursor: pointer;
+}
+</style>
