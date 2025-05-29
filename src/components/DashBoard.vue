@@ -4,7 +4,7 @@
       <img src="@/assets/입체 로고.png" alt="Logo" class="logo" />
       <v-btn>계정 관리</v-btn>
       <v-btn @click="$router.push('/cctvManage')">CCTV 관리</v-btn>
-      <v-btn @click="$router.push('/userManage')">사용자 관리</v-btn>
+      <v-btn @click="$router.push('/log')">로그 관리</v-btn>
       <v-spacer />
       <v-btn @click="$router.push('/login')">로그아웃</v-btn>
     </v-app-bar>
@@ -435,6 +435,7 @@ h3 {
   background-color: #FFFFFF;
   border-radius: 13px;
   box-shadow: 0px 4px 11px -3px rgba(0, 0, 0, 0.31);
+  line-height: 2.2;
 }
 
 .local-info-card-scroll {
@@ -519,9 +520,9 @@ h3 {
 
 .weather-info {
   margin-left: 20px;
-  color: cadetblue;
+  color: #406CDB;
   font-size: 20px;
-  font-weight: 300;
+  font-weight: 400;
 }
 
 .cause-card {

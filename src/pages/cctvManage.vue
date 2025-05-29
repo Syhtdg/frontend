@@ -20,26 +20,28 @@
 
           <!-- 추가하기 다이얼로그 -->
           <v-dialog v-model="addDialog" max-width="400">
-            <v-card>
-              <v-card-title>새 CCTV 위치 추가</v-card-title>
+            <v-card class="popup">
+              <v-card-title style="color: black; text-align: center; margin: 10px; border-radius: 10px;">CCTV 추가</v-card-title>
               <v-card-text>
-                <v-text-field
+                <v-text-field style="background-color: #C2C2C2; height: 50px; margin-bottom: 30px; border-radius: 10px;"
                   v-model.number="newLat"
                   label="위도 (lat)"
                   type="number"
                   :rules="[v => v !== null || '위도를 입력하세요']"
+                  color="black"
                 />
-                <v-text-field
+                <v-text-field style="background-color: #C2C2C2; height: 50px; border-radius: 10px"
                   v-model.number="newLon"
                   label="경도 (lon)"
                   type="number"
                   :rules="[v => v !== null || '경도를 입력하세요']"
+                  color="black"
                 />
               </v-card-text>
               <v-card-actions>
                 <v-spacer />
-                <v-btn text @click="addDialog = false">취소</v-btn>
-                <v-btn color="primary" @click="addNewMarker">확인</v-btn>
+                <v-btn text @click="addDialog = false" style="background-color: black; border-radius: 30px;">취소</v-btn>
+                <v-btn @click="addNewMarker" style="background-color: crimson; color: white; border-radius: 30px; margin-right: 13px;">확인</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
@@ -171,11 +173,11 @@ html, body, #app, .v-application {
 .add-Btn {
   width: 100px;
   height: 60px;
-  background-color: #3157c0;
+  background-color: #C2C2C2;
   color: white;
   font-size: 15px;
   font-weight: bold;
-  border-radius: 10px;
+  border-radius: 7px;
   margin-bottom: 20px;
 }
 .list-box {
@@ -197,4 +199,8 @@ html, body, #app, .v-application {
   margin-top: 40px;
 }
 .map { width: 700px; height: 694px; border-radius: 13px; }
+
+.popup {
+  background-color: #FBFBFB;
+}
 </style>

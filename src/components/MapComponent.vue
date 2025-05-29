@@ -5,6 +5,18 @@
 <script setup>
 import { ref, onMounted, onActivated, defineEmits, defineExpose } from 'vue'
 import axios from '@/plugins/axios'        // proxy 자동 적용된 axios
+import { watch } from 'vue'
+
+
+const props = defineProps({
+  initialMarkers: Array
+})
+
+watch(() => props.initialMarkers, (newVal) => {
+  if (newVal && newVal.length) {
+    refreshMarkers(newVal)
+  }
+}, { deep: true })
 
 const emit = defineEmits(['select-marker'])
 const mapContainer = ref(null)
@@ -16,7 +28,8 @@ defineExpose({
     const m = kakaoMarkers[idx]
     if (m) m.setMap(null)
     kakaoMarkers[idx] = null
-  }
+  },
+  refreshMarkers
 })
 
 function clearMarkers() {
@@ -74,6 +87,11 @@ async function initMap() {
   clearMarkers()
   const locs = await loadLocations()
   renderMarkers(locs)
+}
+
+function refreshMarkers(newMarkers) {
+  clearMarkers()
+  renderMarkers(newMarkers)
 }
 
 onMounted(initMap)
