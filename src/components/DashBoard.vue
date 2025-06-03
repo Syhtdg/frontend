@@ -28,19 +28,7 @@
         <!-- 화재 위험 지역 정보 리스트 -->
         <div>
           <h3>화재 위험 지역 정보</h3>
-          <div class="local-info-card-scroll">
-            <v-card
-              class="pa-4 mb-2"
-              v-for="log in filteredLogs"
-              :key="log.timestamp"
-              :class="log.type === '불' ? 'fire-card' : 'smoke-card'"
-            >
-              <strong>위치:</strong> {{ log.location }}<br />
-              <strong>종류:</strong> {{ log.type }}<br />
-              <strong>신뢰도:</strong> {{ log.confidence }}%<br />
-              <small class="text-grey">{{ formatKoreanDate(log.timestamp) }}</small>
-            </v-card>
-          </div>
+          <div class="local-info-card-scroll"></div>
         </div>
       </div>
 
@@ -67,7 +55,7 @@
                   class="media"
                 >
                   <source :src="cctv.cctvurl" type="application/vnd.apple.mpegurl" />
-                  이 브라우저는 동영상을 지원하지 않습니다.
+                  이 브라우저는 video 태그를 지원하지 않습니다.
                 </video>
 
                 <!-- HLS가 아닐 때 (예: MP4) -->
@@ -79,7 +67,7 @@
                   muted
                   class="media"
                 >
-                  이 브라우저는 동영상을 지원하지 않습니다.
+                  이 브라우저는 video 태그를 지원하지 않습니다.
                 </video>
               </template>
 
@@ -91,34 +79,62 @@
         <!-- 지도: MapComponent 컴포넌트 사용 -->
         <div>
           <h3>지도</h3>
-          <!-- MapComponent 내부에서 Kakao Map을 초기화하고, 마커를 표시하며,
-               @select-marker 이벤트를 발생시키면 onSelectMarker가 호출됩니다. -->
           <MapComponent @select-marker="onSelectMarker" />
         </div>
       </div>
 
-      <!-- 오른쪽 열: 필터 (필요 시 확장) -->
+      <!-- 오른쪽 열: 이벤트 내역 -->
       <div class="right-column">
-        <h3>필터</h3>
-        <div class="filter-section">
-          <!-- 추후 필터 UI 요소 배치 -->
+        <h3>이벤트 내역</h3>
+        <div class="event-section">
+          <div class="event-item">
+            <v-card
+              class="pa-4 mb-2"
+              v-for="log in filteredLogs"
+              :key="log.timestamp"
+              :class="log.type === '불' ? 'fire-card' : 'smoke-card'"
+            >
+              <strong>위치:</strong> {{ log.location }}<br />
+              <strong>종류:</strong> {{ log.type }}<br />
+              <strong>신뢰도:</strong> {{ log.confidence }}%<br />
+              <small style="color: #333;">{{ formatKoreanDate(log.timestamp) }}</small>
+            </v-card>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 알림 팝업 다이얼로그 -->
-    <v-dialog v-model="alertDialog" persistent max-width="500">
+    <!-- ★ 팝업 부분 ★ -->
+    <!-- scroll-strategy="none" 을 추가하여 blockScrollStrategy 오류 회피 -->
+    <v-dialog v-model="alertDialog" persistent max-width="600" scroll-strategy="none">
       <v-card class="alert-dialog-card pa-6 text-center">
+        <!-- 1) 팝업 제목 -->
         <v-card-title class="text-h5 font-weight-bold mb-2">
           {{ alertTitle }}
         </v-card-title>
-        <v-card-text
-          class="mt-3"
-          style="white-space: pre-line; font-size: 18px; line-height: 1.6;"
-        >
-          {{ alertMessage }}
+
+        <!-- 2) 영상 + 메시지 같이 표시 -->
+        <v-card-text class="alert-content">
+          <!-- 2-1) 영상 -->
+          <div class="alert-video-container">
+            <video
+              :src="alertVideoSrc"
+              controls
+              autoplay
+              class="alert-video"
+            >
+              브라우저가 video 태그를 지원하지 않습니다.
+            </video>
+          </div>
+
+          <!-- 2-2) 메시지(위치/신뢰도) -->
+          <div class="alert-message">
+            {{ alertMessage }}
+          </div>
         </v-card-text>
-        <v-card-actions class="justify-center mt-6">
+
+        <!-- 3) 확인 버튼 -->
+        <v-card-actions class="justify-center mt-4">
           <v-btn color="red" variant="flat" class="confirm-button" @click="closeAlert">
             확인
           </v-btn>
@@ -135,49 +151,44 @@ import { io } from 'socket.io-client'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { getWeather } from '@/services/weatherService'
-import MapComponent from './MapComponent.vue'        // ✔ MapComponent 다시 사용
+import MapComponent from './MapComponent.vue'
 import { fetchNearestCctv } from '@/services/cctv'
 import Hls from 'hls.js'
 
-// ------------------------------
+// ==============================
+// **영상 파일을 import 합니다**
+// ==============================
+import alertVideoSrc from '@/assets/시퀀스 01.mp4'
+
 // 1. AI 로그 & 알림 관련 상태
-// ------------------------------
 const logs = ref([])
 const typeFilter = ref('전체')
 const selectedDate = ref(null)
 const formattedDate = ref('')
 const dateMenu = ref(false)
 
-const alertDialog = ref(false)
+const alertDialog = ref(false)      // 팝업 열림 여부
 const alertTitle = ref('')
 const alertMessage = ref('')
 const playingSounds = ref([])
 
-// ------------------------------
 // 2. CCTV 관련 상태
-// ------------------------------
 const cctv = ref(null)
 const cctvLoading = ref(false)
 const cctvError = ref('')
 const videoRef = ref(null)
 
-// ------------------------------
 // 3. 기상 정보 관련 상태
-// ------------------------------
 const temp = ref(null)
 const humidity = ref(null)
 const windSpeed = ref(null)
 const windDirection = ref(null)
 const precipitation = ref(null)
 
-// ------------------------------
 // 4. Socket.IO 연결
-// ------------------------------
 const socket = io('http://localhost:10111')
 
-// ------------------------------
 // 5. 과거 AI 로그 목록 불러오기
-// ------------------------------
 async function fetchLogs() {
   try {
     const res = await axios.get('/ai/result/all')
@@ -187,9 +198,7 @@ async function fetchLogs() {
   }
 }
 
-// ------------------------------
 // 6. 로그 필터링 (타입, 날짜)
-// ------------------------------
 const filteredLogs = computed(() =>
   logs.value.filter((log) => {
     const matchesType = typeFilter.value === '전체' || log.type === typeFilter.value
@@ -200,16 +209,12 @@ const filteredLogs = computed(() =>
   })
 )
 
-// ------------------------------
 // 7. 한국어 날짜 포매팅 함수
-// ------------------------------
 function formatKoreanDate(date) {
   return format(new Date(date), 'yyyy년 M월 d일 (eee) HH:mm:ss', { locale: ko })
 }
 
-// ------------------------------
-// 8. 알림 닫기 & 사운드 정리
-// ------------------------------
+// 8. 알림 닫기 & 사운드 정리x
 function closeAlert() {
   alertDialog.value = false
   playingSounds.value.forEach((sound) => {
@@ -219,11 +224,8 @@ function closeAlert() {
   playingSounds.value = []
 }
 
-// ------------------------------
 // 9. 사운드 재생 함수
-// ------------------------------
 function playSound(type) {
-  // public/sounds 폴더 안에 파일이 있어야 함
   const src = type === '불' ? '/sounds/fire.mp3' : '/sounds/smoke.mp3'
   const audio = new Audio(src)
   audio.volume = 1.0
@@ -238,14 +240,12 @@ function playSound(type) {
   playingSounds.value.push(audio)
 }
 
-// ------------------------------
 // 10. 소켓 이벤트 핸들링 & 초기화
-// ------------------------------
 onMounted(() => {
-  // 10-1. 과거 로그 가져오기
+  // 과거 로그 가져오기
   fetchLogs()
 
-  // 10-2. Socket.IO 이벤트 리스너
+  // Socket.IO 이벤트 리스너
   socket.on('connect', () => {
     console.log('✅ 소켓 연결 완료:', socket.id)
   })
@@ -254,7 +254,7 @@ onMounted(() => {
     console.error('❌ 소켓 연결 오류:', err)
   })
 
-  // 서버가 emit('aiResult', data) 또는 emit('log', data) 중 하나를 사용했다면
+  // emit('aiResult') 또는 emit('log') 이벤트를 둘 다 핸들링
   socket.on('aiResult', (data) => {
     handleIncomingLog(data)
   })
@@ -263,20 +263,18 @@ onMounted(() => {
   })
 })
 
-// ------------------------------
 // 11. 서버로부터 받은 로그 처리 함수
-// ------------------------------
 function handleIncomingLog(data) {
   console.log('📥 서버로부터 받은 데이터:', data)
 
-  // 11-1. 화면 로그 리스트 업데이트
+  // 로그 리스트 업데이트
   logs.value.unshift(data)
   if (logs.value.length > 50) logs.value.pop()
 
-  // 11-2. 팝업 열기
+  // 팝업 열기
   alertDialog.value = true
 
-  // 11-3. 팝업 제목 & 메시지 세팅
+  // 팝업 제목 & 메시지 설정
   if (data.type === '불') {
     alertTitle.value = '🔥 화재 감지됨'
   } else {
@@ -284,13 +282,11 @@ function handleIncomingLog(data) {
   }
   alertMessage.value = `위치: ${data.location}\n신뢰도: ${data.confidence}%`
 
-  // 11-4. 사운드 재생
+  // 사운드 재생
   playSound(data.type)
 }
 
-// ------------------------------
 // 12. CCTV 호출 핸들러
-// ------------------------------
 async function onSelectMarker({ lat, lng }) {
   cctvLoading.value = true
   cctvError.value = ''
@@ -307,9 +303,7 @@ async function onSelectMarker({ lat, lng }) {
   }
 }
 
-// ------------------------------
 // 13. CCTV 스트림(HLS) 초기화
-// ------------------------------
 watch(cctv, async (newVal) => {
   if (!newVal) return
   if (newVal.cctvformat === 'HLS') {
@@ -327,9 +321,7 @@ watch(cctv, async (newVal) => {
   }
 })
 
-// ------------------------------
 // 14. 기상 정보 조회
-// ------------------------------
 onMounted(async () => {
   try {
     const data = await getWeather(37.5326, 127.024612)
@@ -343,9 +335,7 @@ onMounted(async () => {
   }
 })
 
-// ------------------------------
 // 15. 풍향 계산 함수
-// ------------------------------
 function getWindDirection(deg) {
   if (deg >= 0 && deg < 45) return '북'
   if (deg < 90) return '북동'
@@ -357,9 +347,7 @@ function getWindDirection(deg) {
   return '북서'
 }
 
-// ------------------------------
 // 16. 날짜 선택, 초기화 함수
-// ------------------------------
 function onDateSelected(date) {
   formattedDate.value = format(date, 'yyyy-MM-dd')
   dateMenu.value = false
@@ -402,8 +390,8 @@ h3 {
   display: flex;
   flex-direction: column;
   padding: 30px 40px;
-  min-height: 100vh;
-  background-color: black;
+  height: 100%;
+  background-color: #181818;
 }
 
 .dashboard-content {
@@ -451,6 +439,7 @@ h3 {
   padding: 20px;
   background-color: #242424;
   border-radius: 7px;
+  border: 1px solid #fff;
   box-shadow: 0px 4px 11px -3px rgba(0, 0, 0, 0.31);
   line-height: 2.2;
 }
@@ -461,6 +450,7 @@ h3 {
   padding: 20px;
   background-color: #242424;
   border-radius: 7px;
+  border: 1px solid #fff;
   box-shadow: 0px 4px 11px -3px rgba(0, 0, 0, 0.31);
   overflow-y: auto;
 }
@@ -477,6 +467,8 @@ h3 {
 .fire-card {
   background-color: #f33f3f !important;
   border-left: 6px solid #000;
+  width: 550px;
+  height: 120px;
 }
 
 .smoke-card {
@@ -489,6 +481,7 @@ h3 {
   height: 300px;
   background-color: #242424;
   border-radius: 7px;
+  border: 1px solid #fff;
   box-shadow: 0px 4px 11px -3px rgba(0, 0, 0, 0.31);
   display: flex;
   justify-content: center;
@@ -499,27 +492,31 @@ h3 {
   width: 570px;
   height: 300px;
   border-radius: 7px;
+  border: 1px solid #fff;
   box-shadow: 0px 4px 11px -3px rgba(0, 0, 0, 0.31);
 }
 
-.filter-section {
+.event-section {
   display: flex;
   gap: 24px;
   width: 600px;
   height: 700px;
   flex-direction: row;
   border-radius: 7px;
+  border: 1px solid #fff;
   box-shadow: 0px 4px 11px -3px rgba(0, 0, 0, 0.31);
   padding: 20px;
   background-color: #242424;
+  overflow-y: auto;
 }
 
-.filter-item {
+.event-item {
   width: 100px;
   height: 40px;
   color: black;
 }
 
+/* 팝업 카드 스타일 */
 .alert-dialog-card {
   background-color: #343a40;
   color: white;
@@ -528,8 +525,37 @@ h3 {
   box-shadow: 0 0 16px rgba(255, 100, 100, 0.4);
 }
 
+/* 팝업 전용 스타일 */
+.alert-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* 영상과 메시지 사이 간격 */
+}
+
+.alert-video-container {
+  width: 100%;
+  position: relative;
+  padding-top: 56.25%; /* 16:9 비율 유지 */
+}
+
+.alert-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.alert-message {
+  font-size: 1rem;
+  color: #fff;
+  white-space: pre-line;
+}
+
 .letter {
-  color: black;
+  color: #fff;
   font-size: 20px;
   font-weight: bold;
   margin-bottom: 10px;
@@ -537,7 +563,7 @@ h3 {
 
 .weather-info {
   margin-left: 20px;
-  color: #406CDB;
+  color: #8498ca;
   font-size: 20px;
   font-weight: 400;
 }
@@ -555,7 +581,7 @@ h3 {
 }
 
 .placeholder {
-  color: #000000;
+  color: #fff;
 }
 
 .media {
