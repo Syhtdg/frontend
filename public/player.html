@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>CCTV Player</title>
+  <style>body,html{margin:0;padding:0;height:100%}video{width:100%;height:100%;}</style>
+</head>
+<body>
+  <video id="video" controls autoplay muted></video>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    // URL 파라미터에서 src 값을 꺼내서
+    const params = new URLSearchParams(window.location.search)
+    const src = params.get('src')
+    const video = document.getElementById('video')
+
+    if (src && Hls.isSupported()) {
+      const hls = new Hls()
+      hls.loadSource(src)
+      hls.attachMedia(video)
+      hls.on(Hls.Events.MANIFEST_PARSED, ()=> video.play())
+    } else if (src) {
+      video.src = src
+    } else {
+      document.body.innerHTML = '<p>재생할 URL이 없습니다.</p>'
+    }
+  </script>
+</body>
+</html>
